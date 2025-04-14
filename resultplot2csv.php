@@ -1,0 +1,41 @@
+<?php
+include "/var/www/dbincloc/dishet.inc";
+include "cleandata.php";
+//check jobid
+if (isset($_GET['jobid'])) {
+    $jobid = cleandata::clean($_GET['jobid']);
+}else{
+    header("location:tool.php?errorpage=1");
+    exit;
+}
+//open the database connection
+$db_conn = new mysqli($hostname, $usr, $pwd, $dbname);
+if ($db_conn->connect_error) {
+    die('Unable to connect to database: ' . $db_conn->connect_error);
+}
+
+//Retrive plat 2 result file
+if (!empty($jobid) && $result = $db_conn->prepare("SELECT StromaExp_csv FROM DisHetResults WHERE JobID = ?")) {
+    $result->bind_param("s", $jobid);
+    $result->execute();
+    $result->store_result();
+    $result->bind_result($resultgene);
+    $result->fetch();
+    if($resultgene){
+        header("Content-type: text/plain");
+        header("Content-length: " . strlen($resultgene) . "\"");
+        header("Content-Disposition: attachment; filename=StromaExp.csv");
+        header("Content-transfer-encoding: binary");
+        echo $resultgene;
+    }else {
+        header("location:tool.php?errorpage=1");
+        exit;
+    }
+    $result->close();
+}else{
+    header("location:tool.php?errorpage=1");
+    exit;
+}
+
+$db_conn->close();
+?>
